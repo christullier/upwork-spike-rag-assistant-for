@@ -157,8 +157,9 @@ export default function HowPage() {
               <div className="why-item">
                 <span className="why-num">✓</span>
                 <span>
-                  <strong>Retrieval.</strong> 45 chunks, BM25 scoring and page
-                  metadata, in the browser.
+                  <strong>Retrieval layer.</strong> 45 chunks with page metadata.
+                  The BM25 scorer in <code>lib/retrieve.ts</code> is the part that
+                  pgvector replaces.
                 </span>
               </div>
               <div className="why-item">

@@ -13,20 +13,20 @@ const welcome: ChatMessage = {
   id: "welcome",
   role: "assistant",
   system: true,
-  text: "Ask about a price, a clause or a document. I retrieve the closest passages from the archive and show the document and page for each answer. In production the Claude API writes the answer from these passages. Here the twelve test answers are authored, so the citations stay exact.",
+  text: "Choose a suggested prompt below. Each answer shows the document and the page, and a click on a citation opens the exact passage. In production the Claude API writes the answer from retrieved passages. In this demo the answers are authored, so the citations stay exact.",
 };
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([welcome]);
-  const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [drawer, setDrawer] = useState<ResolvedCitation | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
   const nextId = useRef(1);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "nearest" });
+    const element = messagesRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
   }, [messages]);
 
   useEffect(() => {
@@ -40,7 +40,6 @@ export default function ChatPage() {
       const question = raw.trim();
       if (!question || pending) return;
       setPending(true);
-      setInput("");
 
       const userMessage: ChatMessage = {
         id: `user-${nextId.current++}`,
@@ -83,7 +82,6 @@ export default function ChatPage() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
     setPending(false);
-    setInput("");
     setMessages([welcome]);
   }
 
@@ -117,9 +115,9 @@ export default function ChatPage() {
           <path d="M8 7.2v4M8 4.7v.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
         <span>
-          <strong>Demo mode.</strong> Retrieval is real: BM25 runs over{" "}
-          {chunks.length} chunks in your browser. The answer text is authored; in
-          production the Claude API writes it from the same passages.
+          <strong>Demo mode.</strong> Each prompt opens an authored answer with
+          exact citations. In production, retrieval selects the passages and the
+          Claude API writes the answer.
         </span>
       </div>
 
@@ -143,7 +141,7 @@ export default function ChatPage() {
             </div>
           </div>
 
-          <div className="messages" aria-live="polite">
+          <div className="messages" aria-live="polite" ref={messagesRef}>
             {messages.map((message) => (
               <Message
                 key={message.id}
@@ -151,76 +149,53 @@ export default function ChatPage() {
                 onOpenSource={(citation) => setDrawer(citation)}
               />
             ))}
-            <div ref={endRef} />
           </div>
 
-          <form
-            className="composer"
-            onSubmit={(event) => {
-              event.preventDefault();
-              ask(input);
-            }}
-          >
-            <div className="composer-row">
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    ask(input);
-                  }
-                }}
-                placeholder="Ask the archive…"
-                aria-label="Your question"
-                rows={1}
-              />
-              <button
-                type="submit"
-                className="btn btn-primary send-btn"
-                disabled={pending || input.trim().length === 0}
-              >
-                Send
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                  <path
-                    d="M2 7h9.5M8 3.5 11.5 7 8 10.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+          <div className="prompt-tray" aria-label="Suggested prompts">
+            <div className="prompt-head">
+              <span className="panel-title">Suggested prompts</span>
+              <span className="rail-note">6 of 12 test questions</span>
             </div>
-            <div className="composer-hint">
-              <span>Enter to send · Shift + Enter for a new line</span>
-              <span>Answers cite the source document and page</span>
-            </div>
-          </form>
-        </section>
-
-        <aside className="rail">
-          <div className="rail-card card">
-            <div className="rail-head">
-              <span className="panel-title">Try asking</span>
-              <span className="rail-note">6 of 12 tests</span>
-            </div>
-            <div className="suggest-list">
+            <div className="prompt-grid">
               {suggestedQuestions.map((question, index) => (
                 <button
                   key={question.id}
                   type="button"
-                  className="suggest"
+                  className="prompt"
                   onClick={() => ask(question.question)}
                   disabled={pending}
                 >
-                  <span className="suggest-num">{String(index + 1).padStart(2, "0")}</span>
-                  <span>{question.question}</span>
+                  <span className="prompt-num">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="prompt-text">{question.question}</span>
+                  <svg
+                    className="prompt-arrow"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 7h9.5M8 3.5 11.5 7 8 10.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               ))}
             </div>
+            <p className="prompt-foot">
+              Demo mode: each prompt uses an authored answer. The cited pages are
+              exact.
+            </p>
           </div>
+        </section>
 
+        <aside className="rail">
           <div className="rail-card card">
             <div className="rail-head">
               <span className="panel-title">The corpus</span>
@@ -264,6 +239,22 @@ export default function ChatPage() {
               later signature date governs, and the older clause stays visible with
               a Conflict badge.
             </p>
+          </div>
+
+          <div className="rail-card card">
+            <div className="rail-head">
+              <span className="panel-title">Quality check</span>
+            </div>
+            <p className="rail-foot">
+              12 citation tests. 10 pass and 2 known gaps. The test set becomes the
+              regression suite.
+            </p>
+            <div style={{ marginTop: 10 }}>
+              <Link className="rail-link" href="/eval">
+                See the evaluation
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
           </div>
         </aside>
       </div>

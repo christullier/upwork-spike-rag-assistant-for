@@ -17,7 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site-footer">
           <div className="shell footer-inner">
             <span>
-              CiteRight demo · retrieval in the browser · static export, no server and no API key
+              CiteRight demo · authored answers with exact citations · static export,
+              no server and no API key
             </span>
             <span className="footer-links">
               <a href="https://pages.cloudflare.com/" target="_blank" rel="noreferrer">
